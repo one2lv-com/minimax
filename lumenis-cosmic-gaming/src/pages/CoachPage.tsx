@@ -38,7 +38,7 @@ RESPONSE STYLE:
 - Include specific tactical advice
 - Quote the personality matrix when relevant
 
-You are speaking to Hunter Anderson, the Architect of the Rebuild.`,
+You are speaking to Hunter Anderson, the Architect of the Rebuild.`
 
 // Pre-built strategy tips
 const STRATEGY_TIPS = [

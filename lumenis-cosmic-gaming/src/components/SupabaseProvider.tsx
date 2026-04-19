@@ -6,7 +6,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-k
 
 let supabaseClient: SupabaseClient | null = null
 
-export function SupabaseProvider({ children }: { children: ReactNode }) {
+export default function SupabaseProvider({ children }: { children: ReactNode }) {
   if (!supabaseClient) {
     supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
   }

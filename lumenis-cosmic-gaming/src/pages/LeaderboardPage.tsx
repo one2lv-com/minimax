@@ -28,7 +28,7 @@ export default function LeaderboardPage() {
         .order('rating', { ascending: false })
         .limit(100)
 
-      const formatted: LeaderboardEntry[] = (data || []).map((entry: any, index: number) => ({
+      const formatted: LeaderboardEntry[] = (data?.data || []).map((entry: any, index: number) => ({
         rank: index + 1,
         username: entry.users?.username || 'Unknown',
         rating: entry.rating || 0,
