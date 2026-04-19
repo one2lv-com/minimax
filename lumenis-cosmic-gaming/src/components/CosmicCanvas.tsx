@@ -1,6 +1,5 @@
 import { useRef, useMemo, useEffect, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import * as THREE from 'three'
 
 interface CosmicCanvasProps {
@@ -232,14 +231,6 @@ export default function CosmicCanvas({ embedded = false }: CosmicCanvasProps) {
         <HologramPanel position={[0, -1, 1.5]} />
         <ConnectionLines />
         <CameraController />
-
-        <EffectComposer>
-          <Bloom
-            luminanceThreshold={0.2}
-            luminanceSmoothing={0.9}
-            intensity={1.2}
-          />
-        </EffectComposer>
       </Canvas>
     </div>
   )
