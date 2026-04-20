@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { User, Bell, Volume2, Monitor, Palette, Save, Github, MessageCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import SteamIntegration from '../components/SteamIntegration'
 
 export default function SettingsPage() {
   const { user, updateUser, signOut } = useAuth()
@@ -146,6 +147,9 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Steam Integration */}
+      <SteamIntegration />
 
       {/* Integrations */}
       <div className="p-6 rounded-lg holo-panel">
