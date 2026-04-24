@@ -189,14 +189,18 @@ app.get('/api/ai/status', authMiddleware, (req, res) => {
 });
 
 app.post('/api/ai/reset', authMiddleware, (req, res) => {
-  const { getAIPlayer, resetAI } = require('../ai/secondPlayer.js');
-  resetAI();
-  res.json({ success: true, message: 'AI reset to level 1' });
+  // Dynamic import to avoid ESM issues
+  import('../ai/secondPlayer.js').then(module => {
+    module.resetAI();
+    res.json({ success: true, message: 'AI reset to level 1' });
+  });
 });
 
 app.get('/api/ai/evolution-levels', (req, res) => {
-  const { getEvolutionLevels } = require('../tools/tools.js');
-  res.json(getEvolutionLevels());
+  import('../tools/tools.js').then(module => {
+    const levels = module.getEvolutionLevels?.() || [];
+    res.json(levels);
+  });
 });
 
 // ==================== MEMORY ====================

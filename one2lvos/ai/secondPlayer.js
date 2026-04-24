@@ -17,6 +17,8 @@ const EVOLUTION_LEVELS = {
   10: { name: 'One2lv', aggression: 1.0, reactionTime: 50, adaptability: 1.0 }
 };
 
+export { EVOLUTION_LEVELS };
+
 // AI Brain state
 class AIBrain {
   constructor(playerId = 'ai_player') {

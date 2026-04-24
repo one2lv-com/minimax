@@ -17,6 +17,12 @@ function simpleEmbed(text) {
 // Store new memory
 export async function storeMemory(content, context = '') {
   try {
+    // Use in-memory storage if Supabase not available
+    if (!supabase) {
+      console.log('💾 Memory stored (demo mode):', content.substring(0, 50) + '...');
+      return { content, context, id: Date.now() };
+    }
+
     const embedding = simpleEmbed(content);
 
     const { data, error } = await supabase
@@ -43,6 +49,13 @@ export async function storeMemory(content, context = '') {
 // Search memory with similarity
 export async function searchMemory(query, limit = 5) {
   try {
+    // Return demo data if Supabase not available
+    if (!supabase) {
+      return [
+        { content: `Demo memory for: ${query}`, similarity: 0.8, context: 'demo' }
+      ].slice(0, limit);
+    }
+
     const embedding = simpleEmbed(query);
 
     // Get all memories and calculate similarity
