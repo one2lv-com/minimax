@@ -491,7 +491,30 @@ async function init() {
   // Initialize mesh
   initializeMesh();
 
-  // Start server
+  // Start server with error handling
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`⚠️  Port ${PORT} is already in use. Trying port ${PORT + 1}...`);
+      server.listen(PORT + 1, () => {
+        console.log('');
+        console.log('╔══════════════════════════════════════╗');
+        console.log('║        ONE2LVOS v5 ONLINE            ║');
+        console.log('╠══════════════════════════════════════╣');
+        console.log(`║  🌐 API:      http://localhost:${PORT + 1}    ║`);
+        console.log('║  🔌 WebSocket: ws://localhost:' + (PORT + 1) + '     ║');
+        console.log('║  🧠 AI Coach:     READY              ║');
+        console.log('║  📡 AI Broadcaster: READY            ║');
+        console.log('║  🎮 AI Second Player: READY          ║');
+        console.log('║  💾 Memory:     CONNECTED            ║');
+        console.log('║  🕸️  Mesh:       ACTIVE              ║');
+        console.log('╚══════════════════════════════════════╝');
+        console.log('');
+      });
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+
   server.listen(PORT, () => {
     console.log('');
     console.log('╔══════════════════════════════════════╗');
