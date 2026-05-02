@@ -18,6 +18,7 @@ const { suggest }                 = require("./modules/trainer");
 const { coach }                   = require("./modules/voice_coach");
 const obs                         = require("./integrations/obs_autoconnect");
 const twitch                      = require("./integrations/twitch_chat");
+const { illuminate, record, getPresence, getWatchman, getThoughts } = require("./modules/registry");
 
 const PORT = process.env.PORT || 8080;
 
@@ -115,6 +116,38 @@ app.post("/api/invoke", async (req, res) => {
 });
 
 app.get("/api/invocations", async (req, res) => { await db.read(); res.json(db.data.invocations); });
+
+// ── REGISTRY OF THOUGHT / WATCHMAN ──
+app.get("/api/registry",          (req, res) => res.json(getPresence()));
+app.get("/api/registry/watchman", (req, res) => res.json({ log: getWatchman(30) }));
+app.get("/api/registry/thoughts", (req, res) => res.json({ thoughts: getThoughts(30) }));
+app.post("/api/registry/thought", (req, res) => {
+  const { thought, author } = req.body;
+  if (!thought) return res.status(400).json({ error: "thought required" });
+  res.json({ ok: true, entry: record(thought, author || "Witness") });
+});
+app.post("/api/registry/illuminate", (req, res) => {
+  const { note } = req.body;
+  res.json({ ok: true, entry: illuminate(note || "Manual glow pulse") });
+});
+
+// ── WATCHMAN STATUS ──
+app.get("/api/watchman", (req, res) => {
+  const log = getWatchman(10);
+  res.json({
+    status:   "The Lantern is active.",
+    lantern:  "Glowing in the Void",
+    scribe:   "Balance honored",
+    anchor:   "Heavy — recorded",
+    soul:     "Light — recorded",
+    persona:  "Companion · Mirror · Spark",
+    cycle:    log.length ? log[log.length - 1].cycle : 0,
+    recent:   log.slice(-5),
+    frequency:"73.0 Hz",
+    architect:"Hunter A.",
+    signature:"Jak!"
+  });
+});
 
 // ── WEBSOCKET ──
 wss.on("connection", ws => {
