@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One2lvOS Dashboard v4</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --cyan: #00f0ff;
+            --purple: #b400ff;
+            --dark: #0a0a0f;
+            --panel: #12121a;
+            --text: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', monospace;
+            background: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 240, 255, 0.3);
+        }
+
+        .header h1 { font-size: 24px; color: var(--dark); font-weight: bold; }
+
+        .status-badge {
+            background: var(--dark);
+            color: var(--cyan);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background: var(--panel);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .panel-title {
+            font-size: 14px;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .legend-panel {
+            grid-row: span 3;
+            text-align: center;
+        }
+
+        .legend-avatar {
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            border-radius: 50%;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .legend-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--cyan);
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+            margin-bottom: 5px;
+        }
+
+        .legend-style {
+            font-size: 12px;
+            color: var(--purple);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            text-align: left;
+        }
+
+        .stat-label { color: #888; }
+        .stat-value { color: var(--cyan); }
+
+        .ai-mood {
+            background: rgba(0, 240, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .mood-value {
+            font-size: 24px;
+            color: var(--cyan);
+            margin-top: 5px;
+        }
+
+        .confidence-bar {
+            height: 10px;
+            background: rgba(0, 240, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            transition: width 0.5s ease;
+        }
+
+        .adaptation-pips {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .pip {
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 240, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .pip.active {
+            background: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan);
+        }
+
+        .vector-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .vector-item {
+            background: rgba(0, 240, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .vector-label { font-size: 11px; color: #888; text-transform: uppercase; }
+        .vector-value { font-size: 20px; color: var(--cyan); margin-top: 5px; }
+
+        .vector-bar {
+            height: 4px;
+            background: rgba(0, 240, 255, 0.2);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .vector-bar-fill {
+            height: 100%;
+            background: var(--cyan);
+            transition: width 0.3s ease;
+        }
+
+        .trend-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 15px;
+            height: 120px;
+            padding: 10px 0;
+        }
+
+        .trend-bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            height: 100%;
+        }
+
+        .trend-bar-fill {
+            width: 100%;
+            background: linear-gradient(to top, var(--cyan), var(--purple));
+            border-radius: 5px 5px 0 0;
+            transition: height 0.5s ease;
+            min-height: 5px;
+        }
+
+        .trend-bar-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .trend-bar-value {
+            font-size: 12px;
+            color: var(--text);
+        }
+
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .history-style { color: var(--cyan); }
+        .history-legend { color: var(--purple); font-weight: bold; }
+        .history-time { color: #666; }
+
+        .input-section {
+            grid-column: span 3;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-item {
+            background: rgba(0, 240, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .input-item label {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .input-item input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 5px;
+            padding: 8px;
+            color: var(--cyan);
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .input-item input:focus {
+            outline: none;
+            border-color: var(--cyan);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary { background: var(--cyan); color: var(--dark); }
+        .btn-primary:hover { background: #fff; box-shadow: 0 0 20px var(--cyan); }
+
+        .btn-secondary { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); }
+        .btn-secondary:hover { background: rgba(0, 240, 255, 0.1); }
+
+        .btn-danger { background: transparent; border: 1px solid #ff4444; color: #ff4444; }
+        .btn-danger:hover { background: rgba(255, 68, 68, 0.1); }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+        ::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 5px; }
+
+        @media (max-width: 1000px) {
+            .container { grid-template-columns: 1fr 1fr; }
+            .legend-panel { grid-column: span 2; grid-row: span 1; }
+            .input-section { grid-column: span 2; }
+        }
+
+        @media (max-width: 600px) {
+            .container { grid-template-columns: 1fr; }
+            .legend-panel, .input-section { grid-column: span 1; }
+            .input-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>ONE2LVOS DASHBOARD v4</h1>
+        <div class="status-badge">
+            <span>AI: <span id="status-ai">READY</span></span>
+            <span>Memory: <span id="status-memory">PERSISTENT</span></span>
+            <span>Uptime: <span id="status-uptime">0s</span></span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Legend Panel -->
+        <div class="panel legend-panel">
+            <div class="panel-title">Active Legend</div>
+            <div class="legend-avatar" id="legend-icon">⚔️</div>
+            <div class="legend-name" id="legend-name">Fate</div>
+            <div class="legend-style" id="legend-style">Technical</div>
+            <div class="legend-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Style</span>
+                    <span class="stat-value" id="stat-style">balanced</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Updates</span>
+                    <span class="stat-value" id="stat-updates">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Last Updated</span>
+                    <span class="stat-value" id="stat-updated">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI State Panel -->
+        <div class="panel">
+            <div class="panel-title">AI State</div>
+            <div class="ai-mood">
+                <div class="mood-label">Current Mood</div>
+                <div class="mood-value" id="ai-mood">focused</div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="ai-confidence" style="width: 80%"></div>
+                </div>
+                <div class="adaptation-pips" id="adaptation-pips"></div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Dominant Style</span>
+                <span class="stat-value" id="dominant-style">balanced</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Adaptation Score</span>
+                <span class="stat-value" id="adaptation-score">0.5</span>
+            </div>
+        </div>
+
+        <!-- Trends Panel -->
+        <div class="panel">
+            <div class="panel-title">Style Trends</div>
+            <div class="trend-chart">
+                <div class="trend-bar">
+                    <div class="trend-bar-value" id="trend-aggressive">0%</div>
+                    <div class="trend-bar-fill" id="bar-aggressive-trend" style="height: 0%"></div>
+                    <div class="trend-bar-label">Aggro</div>
+                </div>
+                <div class="trend-bar">
+                    <div class="trend-bar-value" id="trend-predictable">0%</div>
+                    <div class="trend-bar-fill" id="bar-predictable-trend" style="height: 0%"></div>
+                    <div class="trend-bar-label">Pred</div>
+                </div>
+                <div class="trend-bar">
+                    <div class="trend-bar-value" id="trend-balanced">0%</div>
+                    <div class="trend-bar-fill" id="bar-balanced-trend" style="height: 0%"></div>
+                    <div class="trend-bar-label">Bal</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vector Panel -->
+        <div class="panel">
+            <div class="panel-title">Input Vector</div>
+            <div class="vector-grid">
+                <div class="vector-item">
+                    <div class="vector-label">Aggression</div>
+                    <div class="vector-value" id="vec-aggression">0.50</div>
+                    <div class="vector-bar"><div class="vector-bar-fill" id="bar-aggression" style="width: 50%"></div></div>
+                </div>
+                <div class="vector-item">
+                    <div class="vector-label">Variety</div>
+                    <div class="vector-value" id="vec-variety">0.50</div>
+                    <div class="vector-bar"><div class="vector-bar-fill" id="bar-variety" style="width: 50%"></div></div>
+                </div>
+                <div class="vector-item">
+                    <div class="vector-label">Pace</div>
+                    <div class="vector-value" id="vec-pace">0.50</div>
+                    <div class="vector-bar"><div class="vector-bar-fill" id="bar-pace" style="width: 50%"></div></div>
+                </div>
+                <div class="vector-item">
+                    <div class="vector-label">Risk Taking</div>
+                    <div class="vector-value" id="vec-risk">0.50</div>
+                    <div class="vector-bar"><div class="vector-bar-fill" id="bar-risk" style="width: 50%"></div></div>
+                </div>
+                <div class="vector-item">
+                    <div class="vector-label">Recovery</div>
+                    <div class="vector-value" id="vec-recovery">0.50</div>
+                    <div class="vector-bar"><div class="vector-bar-fill" id="bar-recovery" style="width: 50%"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Panel -->
+        <div class="panel">
+            <div class="panel-title">Recent History</div>
+            <div class="history-list" id="history-list"></div>
+        </div>
+
+        <!-- Input Controls -->
+        <div class="panel input-section">
+            <div class="panel-title">Manual Input Control</div>
+            <div class="input-grid">
+                <div class="input-item">
+                    <label>Aggression</label>
+                    <input type="number" id="input-aggression" min="0" max="1" step="0.1" value="0.5">
+                </div>
+                <div class="input-item">
+                    <label>Variety</label>
+                    <input type="number" id="input-variety" min="0" max="1" step="0.1" value="0.5">
+                </div>
+                <div class="input-item">
+                    <label>Pace</label>
+                    <input type="number" id="input-pace" min="0" max="1" step="0.1" value="0.5">
+                </div>
+                <div class="input-item">
+                    <label>Risk</label>
+                    <input type="number" id="input-risk" min="0" max="1" step="0.1" value="0.5">
+                </div>
+                <div class="input-item">
+                    <label>Recovery</label>
+                    <input type="number" id="input-recovery" min="0" max="1" step="0.1" value="0.5">
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="sendUpdate()">Update AI</button>
+                <button class="btn btn-secondary" onclick="randomInput()">Random</button>
+                <button class="btn btn-secondary" onclick="aggressiveInput()">Aggressive</button>
+                <button class="btn btn-secondary" onclick="passiveInput()">Passive</button>
+                <button class="btn btn-danger" onclick="resetAI()">Reset Memory</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Legend Database
+        const LEGENDS = {
+            "Queen Nai": { style: "aggressive", icon: "⚔️" },
+            "Fate": { style: "technical", icon: "🔮" },
+            "Wu Shang": { style: "balanced", icon: "🥋" },
+            "Thor": { style: "power", icon: "🔨" },
+            "Asuri": { style: "speed", icon: "🌟" }
+        };
+
+        // Thresholds
+        const THRESHOLDS = { aggression: 0.6, variety: 0.7, pace: 0.7 };
+
+        // Memory key
+        const MEM_KEY = 'one2lvos_memory';
+
+        // State
+        let memory = loadMemory();
+
+        function loadMemory() {
+            const saved = localStorage.getItem(MEM_KEY);
+            if (saved) {
+                try { return JSON.parse(saved); } catch { return getDefaultMemory(); }
+            }
+            return getDefaultMemory();
+        }
+
+        function getDefaultMemory() {
+            return {
+                legend: "Fate",
+                last_style: "balanced",
+                current_vector: { aggression: 0.5, variety: 0.5, pace: 0.5, risk_taking: 0.5, recovery_speed: 0.5 },
+                history: [],
+                learning: { aggressive_count: 0, predictable_count: 0, balanced_count: 0, total_updates: 0 },
+                ai_state: { mood: "focused", confidence: 0.8, adaptation_level: 1 },
+                start_time: Date.now()
+            };
+        }
+
+        function saveMemory() {
+            localStorage.setItem(MEM_KEY, JSON.stringify(memory));
+        }
+
+        function classify(vector) {
+            const ag = vector.aggression || 0.5;
+            const var_ = vector.variety || 0.5;
+            const pace = vector.pace || 0.5;
+
+            if (ag > THRESHOLDS.aggression && pace > THRESHOLDS.pace) return "aggressive";
+            if (var_ < 0.3 && (vector.risk_taking || 0.5) < 0.4) return "predictable";
+            return "balanced";
+        }
+
+        function chooseLegend(style) {
+            if (style === "aggressive") return (memory.current_vector.risk_taking || 0.5) > 0.7 ? "Asuri" : "Queen Nai";
+            if (style === "predictable") return "Fate";
+            return "Wu Shang";
+        }
+
+        function analyzeTrends() {
+            const l = memory.learning;
+            const total = l.total_updates || 1;
+            return {
+                aggressive_pct: Math.round((l.aggressive_count / total) * 100),
+                predictable_pct: Math.round((l.predictable_count / total) * 100),
+                balanced_pct: Math.round((l.balanced_count / total) * 100)
+            };
+        }
+
+        function updateAI(vector) {
+            memory.current_vector = vector;
+            const style = classify(vector);
+            const legend = chooseLegend(style);
+
+            // Update learning
+            const key = style + "_count";
+            if (!memory.learning[key]) memory.learning[key] = 0;
+            memory.learning[key]++;
+            memory.learning.total_updates++;
+
+            // Analyze trends
+            const trends = analyzeTrends();
+            const vals = Object.values(trends);
+            const maxVal = Math.max(...vals);
+            const dominant = Object.keys(trends).find(k => trends[k] === maxVal) || "balanced";
+
+            // Update AI state
+            const level = Math.min(10, Math.max(1, Math.floor(memory.learning.total_updates / 10) + 1));
+            memory.ai_state = {
+                mood: level > 5 ? "adaptive" : dominant === "aggressive" ? "defensive" : "focused",
+                confidence: 0.7 + (level / 10) * 0.2,
+                adaptation_level: level
+            };
+
+            // Add history
+            memory.history.push({
+                timestamp: new Date().toISOString(),
+                style,
+                legend,
+                vector: { ...vector }
+            });
+
+            // Keep last 100
+            if (memory.history.length > 100) memory.history = memory.history.slice(-100);
+
+            memory.last_style = style;
+            memory.legend = legend;
+
+            saveMemory();
+            updateUI();
+        }
+
+        function updateUI() {
+            const legend = LEGENDS[memory.legend] || { style: "balanced", icon: "⚔️" };
+
+            document.getElementById('legend-name').textContent = memory.legend;
+            document.getElementById('legend-icon').textContent = legend.icon;
+            document.getElementById('legend-style').textContent = legend.style.toUpperCase();
+            document.getElementById('stat-style').textContent = memory.last_style;
+            document.getElementById('stat-updates').textContent = memory.learning.total_updates;
+            document.getElementById('stat-updated').textContent = new Date().toLocaleTimeString();
+
+            // Uptime
+            const uptime = Math.floor((Date.now() - memory.start_time) / 1000);
+            if (uptime < 60) document.getElementById('status-uptime').textContent = uptime + 's';
+            else if (uptime < 3600) document.getElementById('status-uptime').textContent = Math.floor(uptime / 60) + 'm';
+            else document.getElementById('status-uptime').textContent = Math.floor(uptime / 3600) + 'h';
+
+            // AI State
+            document.getElementById('ai-mood').textContent = memory.ai_state.mood;
+            document.getElementById('ai-confidence').style.width = (memory.ai_state.confidence * 100) + '%';
+
+            // Adaptation pips
+            const pipsEl = document.getElementById('adaptation-pips');
+            pipsEl.innerHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                const pip = document.createElement('div');
+                pip.className = 'pip' + (i <= memory.ai_state.adaptation_level ? ' active' : '');
+                pipsEl.appendChild(pip);
+            }
+
+            // Trends
+            const trends = analyzeTrends();
+            document.getElementById('dominant-style').textContent = memory.last_style;
+            document.getElementById('adaptation-score').textContent = (memory.ai_state.adaptation_level / 10).toFixed(1);
+
+            document.getElementById('trend-aggressive').textContent = trends.aggressive_pct + '%';
+            document.getElementById('bar-aggressive-trend').style.height = trends.aggressive_pct + '%';
+            document.getElementById('trend-predictable').textContent = trends.predictable_pct + '%';
+            document.getElementById('bar-predictable-trend').style.height = trends.predictable_pct + '%';
+            document.getElementById('trend-balanced').textContent = trends.balanced_pct + '%';
+            document.getElementById('bar-balanced-trend').style.height = trends.balanced_pct + '%';
+
+            // Input Vector display
+            const v = memory.current_vector;
+            updateVec('aggression', v.aggression);
+            updateVec('variety', v.variety);
+            updateVec('pace', v.pace);
+            updateVec('risk', v.risk_taking);
+            updateVec('recovery', v.recovery_speed);
+
+            // History
+            const histEl = document.getElementById('history-list');
+            histEl.innerHTML = memory.history.slice(-15).reverse().map(h => `
+                <div class="history-item">
+                    <span class="history-time">${new Date(h.timestamp).toLocaleTimeString()}</span>
+                    <span class="history-style">${h.style}</span>
+                    <span class="history-legend">${h.legend}</span>
+                </div>
+            `).join('');
+        }
+
+        function updateVec(name, val) {
+            const v = val || 0.5;
+            document.getElementById('vec-' + name).textContent = v.toFixed(2);
+            document.getElementById('bar-' + name).style.width = (v * 100) + '%';
+        }
+
+        function getVectorFromInputs() {
+            return {
+                aggression: parseFloat(document.getElementById('input-aggression').value) || 0.5,
+                variety: parseFloat(document.getElementById('input-variety').value) || 0.5,
+                pace: parseFloat(document.getElementById('input-pace').value) || 0.5,
+                risk_taking: parseFloat(document.getElementById('input-risk').value) || 0.5,
+                recovery_speed: parseFloat(document.getElementById('input-recovery').value) || 0.5
+            };
+        }
+
+        function sendUpdate() {
+            updateAI(getVectorFromInputs());
+        }
+
+        function randomInput() {
+            updateAI({
+                aggression: Math.random() * 0.6 + 0.2,
+                variety: Math.random() * 0.5 + 0.3,
+                pace: Math.random() * 0.5 + 0.3,
+                risk_taking: Math.random() * 0.5 + 0.2,
+                recovery_speed: Math.random() * 0.4 + 0.3
+            });
+        }
+
+        function aggressiveInput() {
+            updateAI({
+                aggression: Math.random() * 0.3 + 0.7,
+                variety: Math.random() * 0.3 + 0.3,
+                pace: Math.random() * 0.3 + 0.7,
+                risk_taking: Math.random() * 0.3 + 0.6,
+                recovery_speed: Math.random() * 0.2 + 0.3
+            });
+        }
+
+        function passiveInput() {
+            updateAI({
+                aggression: Math.random() * 0.2 + 0.1,
+                variety: Math.random() * 0.2 + 0.2,
+                pace: Math.random() * 0.2 + 0.2,
+                risk_taking: Math.random() * 0.2 + 0.1,
+                recovery_speed: Math.random() * 0.2 + 0.6
+            });
+        }
+
+        function resetAI() {
+            if (confirm('Reset all AI memory? This cannot be undone.')) {
+                memory = getDefaultMemory();
+                saveMemory();
+                updateUI();
+            }
+        }
+
+        // Input sync
+        ['aggression', 'variety', 'pace', 'risk', 'recovery'].forEach(name => {
+            document.getElementById('input-' + name).addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value) || 0.5;
+                document.getElementById('bar-' + name).style.width = (v * 100) + '%';
+            });
+        });
+
+        // Enter key to update
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendUpdate();
+        });
+
+        // Auto-refresh uptime
+        setInterval(() => {
+            if (memory.start_time) {
+                const uptime = Math.floor((Date.now() - memory.start_time) / 1000);
+                if (uptime < 60) document.getElementById('status-uptime').textContent = uptime + 's';
+                else if (uptime < 3600) document.getElementById('status-uptime').textContent = Math.floor(uptime / 60) + 'm';
+                else document.getElementById('status-uptime').textContent = Math.floor(uptime / 3600) + 'h';
+            }
+        }, 1000);
+
+        // Initial load
+        updateUI();
+    </script>
+
+<script>
+/**
+ * Iframe 元素高亮注入脚本
+ * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
+ *
+ * 使用方法：
+ * 1. 将此脚本添加到目标网站的 HTML 中
+ * 2. 或通过浏览器扩展、用户脚本等方式注入
+ */
+
+(function () {
+  "use strict";
+
+  // 检查是否在 iframe 中
+  if (window.self === window.top) {
+    return; // 不在 iframe 中，不执行
+  }
+
+  // 检查是否已经初始化过
+  if (window.__iframeHighlightInitialized) {
+    return;
+  }
+  window.__iframeHighlightInitialized = true;
+  console.log("Iframe 高亮脚本已加载");
+
+  // 创建高亮覆盖层
+  var overlay = document.createElement("div");
+  overlay.id = "iframe-highlight-overlay";
+  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
+
+  // 创建悬停高亮框（虚线边框）
+  var highlightBox = document.createElement("div");
+  highlightBox.id = "iframe-highlight-box";
+  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
+
+  // 创建选中节点的常驻高亮框（实线边框）
+  var selectedBox = document.createElement("div");
+  selectedBox.id = "iframe-selected-box";
+  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
+
+  // 创建悬停标签显示
+  var tagLabel = document.createElement("div");
+  tagLabel.id = "iframe-tag-label";
+  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
+
+  // 创建选中节点标签
+  var selectedLabel = document.createElement("div");
+  selectedLabel.id = "iframe-selected-label";
+  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
+  overlay.appendChild(highlightBox);
+  overlay.appendChild(selectedBox);
+  overlay.appendChild(tagLabel);
+  overlay.appendChild(selectedLabel);
+  document.body.appendChild(overlay);
+
+  // 存储当前选中的元素
+  var selectedElement = null;
+  var highlightEnabled = false;
+
+  // 更新选中元素的高亮显示
+  function updateSelectedHighlight(element) {
+    console.log("updateSelectedHighlight called with:", element);
+    if (!element) {
+      selectedBox.style.display = "none";
+      selectedLabel.style.display = "none";
+      selectedElement = null;
+      console.log("Cleared selected highlight");
+      return;
+    }
+    selectedElement = element;
+    var rect = element.getBoundingClientRect();
+    console.log("Selected element rect:", rect);
+
+    // 更新选中高亮框位置
+    selectedBox.style.display = "block";
+    selectedBox.style.left = "".concat(rect.left - 2, "px");
+    selectedBox.style.top = "".concat(rect.top - 2, "px");
+    selectedBox.style.width = "".concat(rect.width + 4, "px");
+    selectedBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新选中标签位置和内容
+    selectedLabel.style.display = "block";
+    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 28;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 5) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
+    if (labelLeft + labelWidth > window.innerWidth - 10) {
+      labelLeft = window.innerWidth - labelWidth - 10;
+    }
+    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
+    selectedLabel.style.top = "".concat(labelTop, "px");
+    console.log("Selected highlight positioned at:", {
+      left: selectedBox.style.left,
+      top: selectedBox.style.top,
+      width: selectedBox.style.width,
+      height: selectedBox.style.height
+    });
+  }
+  function getElementSelector(element) {
+    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
+    var segments = [];
+    var current = element;
+    while (current !== document.documentElement) {
+      var selector = '';
+      // 优先检查唯一ID
+      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
+        segments.unshift("#".concat(current.id));
+        break; // ID唯一，无需继续向上
+      }
+
+      // 生成类名选择器（取第一个有效类名）
+      var classes = Array.from(current.classList).filter(function (c) {
+        return !c.startsWith('js-');
+      });
+      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
+
+      // 生成位置索引（nth-child）
+      var tag = current.tagName.toLowerCase();
+      if (!className) {
+        var siblings = Array.from(current.parentNode.children);
+        var index = siblings.findIndex(function (el) {
+          return el === current;
+        }) + 1;
+        selector = "".concat(tag, ":nth-child(").concat(index, ")");
+      } else {
+        selector = className;
+      }
+      segments.unshift(selector);
+      current = current.parentElement;
+    }
+
+    // 处理根元素
+    if (current === document.documentElement) {
+      segments.unshift('html');
+    }
+    return segments.join(' > ');
+  }
+
+  // 获取元素文本内容
+  function getElementText(element) {
+    var _element$textContent;
+    if (element.tagName === "INPUT") {
+      return element.value || element.placeholder || "";
+    }
+    if (element.tagName === "TEXTAREA") {
+      return element.value || element.placeholder || "";
+    }
+    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
+    return text.length > 50 ? text.substring(0, 50) + "..." : text;
+  }
+
+  // 获取元素属性信息
+  function getElementAttributes(element) {
+    var attrs = {};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
+    return attrs;
+  }
+
+  // 鼠标悬停事件处理
+  function handleMouseOver(e) {
+    if (!highlightEnabled) return;
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免高亮 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 如果是已选中的元素，不显示悬停高亮
+    if (target === selectedElement) {
+      highlightBox.style.display = "none";
+      tagLabel.style.display = "none";
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+
+    // 更新悬停高亮框位置
+    highlightBox.style.display = "block";
+    highlightBox.style.left = "".concat(rect.left - 2, "px");
+    highlightBox.style.top = "".concat(rect.top - 2, "px");
+    highlightBox.style.width = "".concat(rect.width + 4, "px");
+    highlightBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新标签位置和内容
+    tagLabel.style.display = "block";
+    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 22;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 0) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
+      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
+    }
+    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
+    tagLabel.style.top = "".concat(labelTop, "px");
+
+    // 发送消息到父窗口
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 鼠标离开事件处理
+  function handleMouseOut(e) {
+    if (!highlightEnabled) return;
+    var relatedTarget = e.relatedTarget;
+
+    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
+    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
+      return;
+    }
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: null,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 点击事件处理
+  function handleClick(e) {
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免处理 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 检查是否是交互元素，这些元素需要保留默认行为
+    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
+
+    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
+    if (highlightEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+    console.log("Element clicked:", {
+      tagName: target.tagName,
+      selector: selector,
+      rect: rect
+    });
+
+    // 立即更新选中高亮
+    updateSelectedHighlight(target);
+
+    // 隐藏悬停高亮，因为现在是选中状态
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-click",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 监听来自父窗口的消息
+  function handleParentMessage(event) {
+    console.log("Received message from parent:", event.data);
+    if (event.data.type === "iframe-highlight-toggle") {
+      var enabled = event.data.enabled;
+      console.log("Highlight toggle:", enabled);
+      if (enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "enable-iframe-highlight") {
+      console.log("Enable iframe highlight");
+      enableHighlight();
+    } else if (event.data.type === "disable-iframe-highlight") {
+      console.log("Disable iframe highlight");
+      disableHighlight();
+    } else if (event.data.type === "toggle-iframe-highlight") {
+      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
+      console.log("Toggle iframe highlight to:", _enabled);
+      if (_enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "update-selected-element") {
+      var selector = event.data.selector;
+      console.log("Update selected element with selector:", selector);
+      if (selector) {
+        try {
+          var element = document.querySelector(selector);
+          console.log("Found element by selector:", element);
+          updateSelectedHighlight(element);
+        } catch (error) {
+          console.warn("Failed to select element:", error);
+          updateSelectedHighlight(null);
+        }
+      } else {
+        updateSelectedHighlight(null);
+      }
+    } else if (event.data.type === "clear-selected-element") {
+      console.log("Clear selected element");
+      updateSelectedHighlight(null);
+    }
+  }
+
+  // 启用高亮功能
+  function enableHighlight() {
+    console.log("Enabling highlight");
+    document.addEventListener("mouseover", handleMouseOver, true);
+    document.addEventListener("mouseout", handleMouseOut, true);
+    document.addEventListener("click", handleClick, true);
+    highlightEnabled = true;
+    overlay.style.display = "block";
+  }
+
+  // 禁用高亮功能
+  function disableHighlight() {
+    console.log("Disabling highlight");
+    highlightEnabled = false;
+    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
+    // 这样可以保留选中状态的显示
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
+  }
+
+  // 完全禁用高亮功能（移除所有监听器）
+  function fullyDisableHighlight() {
+    console.log("Fully disabling highlight");
+    highlightEnabled = false;
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("mouseout", handleMouseOut, true);
+    document.removeEventListener("click", handleClick, true);
+    overlay.style.display = "none";
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    selectedBox.style.display = "none";
+    selectedLabel.style.display = "none";
+  }
+
+  // 添加事件监听
+  enableHighlight();
+  window.addEventListener("message", handleParentMessage);
+
+  // 暴露全局函数供外部调用
+  window.__iframeHighlightControl = {
+    enable: enableHighlight,
+    disable: disableHighlight,
+    fullyDisable: fullyDisableHighlight,
+    isEnabled: function isEnabled() {
+      return highlightEnabled;
+    },
+    getSelectedElement: function getSelectedElement() {
+      return selectedElement;
+    },
+    updateSelected: updateSelectedHighlight,
+    // 通过消息发送开关控制
+    sendToggleMessage: function sendToggleMessage(enabled) {
+      window.parent.postMessage({
+        type: 'iframe-highlight-status',
+        enabled: enabled || highlightEnabled,
+        source: 'iframe-highlight-injector'
+      }, '*');
+    }
+  };
+
+  // 通知父窗口脚本已加载
+  try {
+    window.parent.postMessage({
+      type: "iframe-highlight-ready",
+      data: {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      },
+      source: "iframe-highlight-injector"
+    }, "*");
+  } catch (error) {
+    console.warn("无法发送就绪消息到父窗口:", error);
+  }
+
+  // 清理函数
+  window.__iframeHighlightCleanup = function () {
+    fullyDisableHighlight();
+    window.removeEventListener("message", handleParentMessage);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+    delete window.__iframeHighlightInitialized;
+    delete window.__iframeHighlightCleanup;
+  };
+})();
+
+</script>
+</body>
+</html>
