@@ -954,8 +954,6 @@ function FilesPage() {
   const [root, setRoot] = useState<FileSystemDirectoryHandle | null>(null);
   const [entries, setEntries] = useState<FSEntry[]>([]);
   const [path, setPath] = useState<string[]>([]);
-  const [currentDir, setCurrentDir] = useState<FileSystemDirectoryHandle | null>(null);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [fileContent, setFileContent] = useState<{ name: string; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
