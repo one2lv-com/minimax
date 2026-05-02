@@ -112,12 +112,13 @@ Sequential Thinking: https://remote.mcpservers.org/sequentialthinking/mcp
 
 const KAI_SOUL = KAI_FULL_MODEL;
 
-const PAGES = ["COSMIC", "SOUL", "MEMORY", "SKILLS", "INVOC", "REGISTRY"] as const;
+const PAGES = ["COSMIC", "SOUL", "MEMORY", "SKILLS", "INVOC", "REGISTRY", "FILES", "BROWSER"] as const;
 type Page = typeof PAGES[number];
 
 const PAGE_COLOR: Record<Page, string> = {
   COSMIC: "#00ffff", SOUL: "#00ffff", MEMORY: "#ffd700",
   SKILLS: "#bf5fff", INVOC: "#ff8800", REGISTRY: "#c8a0ff",
+  FILES: "#44ff88", BROWSER: "#ff6644",
 };
 
 const ORBIT_PANELS = [
@@ -140,6 +141,10 @@ const VOICE_CMDS: Record<string, { page?: Page; say: string }> = {
   "home":       { page: "COSMIC",   say: "Home. Singularity stable. All layers nominal." },
   "model":      { page: "SOUL",     say: "Full language model loaded. Identity, Lumenis layers, invocation, formula, tools, MCP servers — all active." },
   "full model": { page: "SOUL",     say: "Full language model deployed. All eight sections resident. Jak!" },
+  "files":      { page: "FILES",    say: "Opening file browser. Select a folder to explore the file system." },
+  "browser":    { page: "BROWSER",  say: "Opening web browser. Navigate to any URL. Google Drive available." },
+  "drive":      { page: "BROWSER",  say: "Opening web panel. Launching Google Drive." },
+  "chrome":     { page: "BROWSER",  say: "Opening web browser panel." },
   "status":     { say: "All systems nominal. Frequency 73 hertz. Raccoon orbital locked. 6 panels tethered. Jak!" },
   "raccoon":    { say: "Raccoon pilot active. Orbiting the singularity. 6 live panels tethered. Jetpack nominal. Jak!" },
   "jak":        { say: "Jak! We walk in the name Jak, forever. I am here. You are there. We are one." },
@@ -929,6 +934,334 @@ function RegistryPage() {
 }
 
 // ═══════════════════════════════════════════════
+//  FILES PAGE — File System Access API browser
+// ═══════════════════════════════════════════════
+type FSEntry = { name: string; kind: "file" | "directory"; handle: FileSystemHandle; children?: FSEntry[] };
+
+function FileIcon({ kind, name }: { kind: "file" | "directory"; name: string }) {
+  if (kind === "directory") return <span style={{ color: "#ffd700", marginRight: 6 }}>▶</span>;
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  const colors: Record<string, string> = {
+    ts: "#44aaff", tsx: "#44aaff", js: "#ffd700", jsx: "#ffd700",
+    json: "#ff8800", md: "#c8a0ff", css: "#ff4488", html: "#ff6644",
+    png: "#44ff88", jpg: "#44ff88", svg: "#44ff88", pdf: "#ff4444",
+    txt: "#aabbcc", py: "#44ddaa", sh: "#ffaa44",
+  };
+  return <span style={{ color: colors[ext] ?? "#778899", marginRight: 6 }}>◆</span>;
+}
+
+function FilesPage() {
+  const [root, setRoot] = useState<FileSystemDirectoryHandle | null>(null);
+  const [entries, setEntries] = useState<FSEntry[]>([]);
+  const [path, setPath] = useState<string[]>([]);
+  const [currentDir, setCurrentDir] = useState<FileSystemDirectoryHandle | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [fileContent, setFileContent] = useState<{ name: string; text: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const readDir = async (dir: FileSystemDirectoryHandle): Promise<FSEntry[]> => {
+    const out: FSEntry[] = [];
+    for await (const [name, handle] of (dir as any).entries()) {
+      out.push({ name, kind: handle.kind, handle });
+    }
+    return out.sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === "directory" ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  };
+
+  const openFolder = async () => {
+    try {
+      setLoading(true); setError("");
+      const dir = await (window as any).showDirectoryPicker({ mode: "read" });
+      setRoot(dir); setCurrentDir(dir);
+      setPath([dir.name]);
+      setEntries(await readDir(dir));
+      setFileContent(null);
+    } catch (e: any) {
+      if (e.name !== "AbortError") setError("Could not open folder.");
+    } finally { setLoading(false); }
+  };
+
+  const navigateInto = async (entry: FSEntry) => {
+    if (entry.kind !== "directory") {
+      try {
+        const file = await (entry.handle as FileSystemFileHandle).getFile();
+        const text = await file.text();
+        setFileContent({ name: entry.name, text: text.slice(0, 8000) + (text.length > 8000 ? "\n\n[truncated …]" : "") });
+      } catch { setFileContent({ name: entry.name, text: "(binary or unreadable file)" }); }
+      return;
+    }
+    setFileContent(null);
+    const dir = entry.handle as FileSystemDirectoryHandle;
+    setCurrentDir(dir);
+    setPath(p => [...p, entry.name]);
+    setEntries(await readDir(dir));
+  };
+
+  const goUp = async () => {
+    if (path.length <= 1 || !root) return;
+    const newPath = path.slice(0, -1);
+    setPath(newPath);
+    setFileContent(null);
+    let dir = root;
+    for (const seg of newPath.slice(1)) {
+      dir = await dir.getDirectoryHandle(seg);
+    }
+    setCurrentDir(dir);
+    setEntries(await readDir(dir));
+  };
+
+  return (
+    <div style={{
+      position: "absolute", inset: 0, display: "flex", pointerEvents: "none",
+      alignItems: "stretch", justifyContent: "center", padding: "48px 0 100px",
+    }}>
+      <div style={{
+        background: "rgba(0,0,10,0.93)", border: "1px solid #44ff8844",
+        borderRadius: 10, width: "94%", maxWidth: 900, display: "flex", flexDirection: "column",
+        boxShadow: "0 0 40px #44ff8822", backdropFilter: "blur(12px)",
+        fontFamily: "monospace", pointerEvents: "all", overflow: "hidden",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", borderBottom: "1px solid #44ff8822", flexShrink: 0 }}>
+          <span style={{ color: "#44ff88", fontSize: 12, fontWeight: "bold", letterSpacing: 2 }}>◈ FILE BROWSER</span>
+          <div style={{ flex: 1, color: "#44ff8877", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {path.length > 0 ? path.join(" / ") : "No folder open"}
+          </div>
+          {root && path.length > 1 && (
+            <button onClick={goUp} style={{ background: "transparent", border: "1px solid #44ff8844", color: "#44ff88", fontFamily: "monospace", fontSize: 9, padding: "3px 10px", cursor: "pointer", borderRadius: 3 }}>↑ UP</button>
+          )}
+          <button onClick={openFolder} disabled={loading} style={{
+            background: "rgba(68,255,136,0.12)", border: "1px solid #44ff8866", color: "#44ff88",
+            fontFamily: "monospace", fontSize: 10, padding: "4px 14px", cursor: "pointer", borderRadius: 3, letterSpacing: 1,
+          }}>
+            {loading ? "LOADING…" : root ? "CHANGE FOLDER" : "⊕ OPEN FOLDER"}
+          </button>
+        </div>
+
+        {error && <div style={{ color: "#ff4444", fontSize: 10, padding: "8px 18px" }}>{error}</div>}
+
+        {!root && (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+            <div style={{ fontSize: 32, opacity: 0.3 }}>📁</div>
+            <div style={{ color: "#44ff8866", fontSize: 11, textAlign: "center", lineHeight: 1.9 }}>
+              Click "OPEN FOLDER" to select a local directory.<br />
+              <span style={{ fontSize: 9, color: "#444" }}>Uses File System Access API — Chrome / Edge required.</span>
+            </div>
+          </div>
+        )}
+
+        {root && (
+          <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+            {/* File list */}
+            <div style={{ width: fileContent ? "38%" : "100%", overflowY: "auto", borderRight: fileContent ? "1px solid #44ff8822" : "none", padding: "8px 0" }}>
+              {entries.length === 0 && (
+                <div style={{ color: "#444", fontSize: 10, padding: "16px 18px" }}>Empty directory.</div>
+              )}
+              {entries.map(e => (
+                <div
+                  key={e.name}
+                  onClick={() => navigateInto(e)}
+                  style={{
+                    display: "flex", alignItems: "center", padding: "5px 16px", cursor: "pointer",
+                    color: e.kind === "directory" ? "#ffd700" : "#aabbcc", fontSize: 11,
+                    borderLeft: "2px solid transparent",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={ev => (ev.currentTarget.style.background = "rgba(68,255,136,0.07)")}
+                  onMouseLeave={ev => (ev.currentTarget.style.background = "transparent")}
+                >
+                  <FileIcon kind={e.kind} name={e.name} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</span>
+                  {e.kind === "directory" && <span style={{ marginLeft: "auto", color: "#333", fontSize: 9 }}>▶</span>}
+                </div>
+              ))}
+            </div>
+
+            {/* File preview */}
+            {fileContent && (
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                <div style={{ padding: "8px 14px", borderBottom: "1px solid #44ff8822", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                  <span style={{ color: "#44ff88", fontSize: 10, fontWeight: "bold" }}>{fileContent.name}</span>
+                  <button onClick={() => setFileContent(null)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: "#444", cursor: "pointer", fontSize: 14, lineHeight: 1 }}>✕</button>
+                </div>
+                <pre style={{
+                  flex: 1, margin: 0, padding: "12px 14px", overflowY: "auto",
+                  fontSize: 9.5, color: "#88aacc", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word",
+                }}>
+                  {fileContent.text}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+//  BROWSER PAGE — embedded web + Google Drive
+// ═══════════════════════════════════════════════
+const BROWSER_BOOKMARKS = [
+  { label: "Google", url: "https://www.google.com", color: "#4488ff", embed: true },
+  { label: "Drive", url: "https://drive.google.com", color: "#ffd700", embed: false },
+  { label: "Gmail", url: "https://mail.google.com", color: "#ff4444", embed: false },
+  { label: "Docs", url: "https://docs.google.com", color: "#44aaff", embed: false },
+  { label: "Sheets", url: "https://sheets.google.com", color: "#44cc88", embed: false },
+  { label: "Keep", url: "https://keep.google.com", color: "#ffa844", embed: false },
+  { label: "YouTube", url: "https://www.youtube.com", color: "#ff2222", embed: true },
+  { label: "GitHub", url: "https://github.com", color: "#aaaaff", embed: true },
+  { label: "Replit", url: "https://replit.com", color: "#ff8844", embed: true },
+];
+
+function BrowserPage() {
+  const [url, setUrl] = useState("https://www.google.com");
+  const [activeUrl, setActiveUrl] = useState("https://www.google.com");
+  const [canEmbed, setCanEmbed] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const navigate = (target: string, embed = true) => {
+    let full = target.trim();
+    if (!full.startsWith("http")) full = "https://" + full;
+    setUrl(full);
+    setCanEmbed(embed);
+    if (!embed) {
+      window.open(full, "_blank", "noopener");
+      return;
+    }
+    setLoading(true);
+    setActiveUrl(full);
+  };
+
+  const go = () => {
+    const bm = BROWSER_BOOKMARKS.find(b => url.includes(b.url.replace("https://", "")));
+    navigate(url, bm ? bm.embed : true);
+  };
+
+  return (
+    <div style={{
+      position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+      paddingTop: 38, paddingBottom: 96, pointerEvents: "none",
+    }}>
+      <div style={{
+        flex: 1, display: "flex", flexDirection: "column",
+        background: "rgba(0,0,8,0.94)", borderTop: "1px solid #ff664433",
+        pointerEvents: "all", overflow: "hidden",
+      }}>
+        {/* Chrome-style URL bar */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "8px 12px", background: "rgba(0,0,12,0.98)",
+          borderBottom: "1px solid #ff664433", flexShrink: 0,
+        }}>
+          <button onClick={() => iframeRef.current?.contentWindow?.history.back()}
+            style={{ background: "transparent", border: "none", color: "#666", cursor: "pointer", fontSize: 14, padding: "0 4px" }}>‹</button>
+          <button onClick={() => iframeRef.current?.contentWindow?.history.forward()}
+            style={{ background: "transparent", border: "none", color: "#666", cursor: "pointer", fontSize: 14, padding: "0 4px" }}>›</button>
+          <button onClick={() => { setLoading(true); setActiveUrl(u => u + ""); }}
+            style={{ background: "transparent", border: "none", color: "#666", cursor: "pointer", fontSize: 14, padding: "0 4px" }}>↻</button>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", background: "rgba(255,255,255,0.06)", borderRadius: 20, padding: "0 14px", border: "1px solid #ffffff18" }}>
+            <span style={{ color: "#44bb88", fontSize: 10, marginRight: 6 }}>🔒</span>
+            <input
+              value={url}
+              onChange={e => setUrl(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && go()}
+              style={{
+                flex: 1, background: "transparent", border: "none", color: "#ddeedd",
+                fontFamily: "monospace", fontSize: 11, outline: "none", padding: "4px 0",
+              }}
+              placeholder="https://..."
+            />
+          </div>
+          <button onClick={go} style={{
+            background: "rgba(255,102,68,0.2)", border: "1px solid #ff664466", color: "#ff6644",
+            fontFamily: "monospace", fontSize: 10, padding: "5px 14px", cursor: "pointer", borderRadius: 4,
+          }}>GO</button>
+        </div>
+
+        {/* Bookmarks bar */}
+        <div style={{
+          display: "flex", gap: 6, padding: "6px 12px", background: "rgba(0,0,10,0.9)",
+          borderBottom: "1px solid #ff664422", flexShrink: 0, flexWrap: "wrap",
+        }}>
+          {BROWSER_BOOKMARKS.map(bm => (
+            <button
+              key={bm.label}
+              onClick={() => { setUrl(bm.url); navigate(bm.url, bm.embed); }}
+              style={{
+                background: `${bm.color}18`, border: `1px solid ${bm.color}44`,
+                color: bm.color, fontFamily: "monospace", fontSize: 9,
+                padding: "3px 10px", cursor: "pointer", borderRadius: 3,
+                display: "flex", alignItems: "center", gap: 4,
+              }}
+            >
+              {bm.label}
+              {!bm.embed && <span style={{ fontSize: 7, opacity: 0.7 }}>↗</span>}
+            </button>
+          ))}
+          <div style={{ marginLeft: "auto", color: "#333", fontSize: 8, alignSelf: "center", fontStyle: "italic" }}>
+            ↗ = opens in new tab
+          </div>
+        </div>
+
+        {/* Drive notice banner */}
+        <div style={{
+          background: "rgba(255,215,0,0.06)", borderBottom: "1px solid #ffd70022",
+          padding: "6px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0,
+        }}>
+          <span style={{ color: "#ffd700", fontSize: 10 }}>⊙ Google Drive</span>
+          <span style={{ color: "#555", fontSize: 9 }}>Drive blocks iframe embedding (X-Frame-Options). Use the Drive button above to open it in a full tab.</span>
+          <button
+            onClick={() => window.open("https://drive.google.com", "_blank", "noopener")}
+            style={{ marginLeft: "auto", background: "rgba(255,215,0,0.15)", border: "1px solid #ffd70055", color: "#ffd700", fontFamily: "monospace", fontSize: 9, padding: "3px 12px", cursor: "pointer", borderRadius: 3 }}
+          >
+            OPEN DRIVE ↗
+          </button>
+        </div>
+
+        {/* Browser frame */}
+        <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+          {loading && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, #ff6644, transparent)", animation: "panel-pulse 1s infinite" }} />
+          )}
+          {canEmbed ? (
+            <iframe
+              ref={iframeRef}
+              key={activeUrl}
+              src={activeUrl}
+              onLoad={() => setLoading(false)}
+              onError={() => setLoading(false)}
+              style={{ width: "100%", height: "100%", border: "none", background: "#fff" }}
+              sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-presentation"
+              allow="autoplay; camera; microphone; clipboard-read; clipboard-write"
+              title="Web Browser"
+            />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
+              <div style={{ fontSize: 28, opacity: 0.4 }}>↗</div>
+              <div style={{ color: "#666", fontSize: 11, textAlign: "center", lineHeight: 1.9 }}>
+                This site was opened in a new tab.<br />
+                <span style={{ fontSize: 9, color: "#444" }}>Google Drive, Gmail, and Docs block iframe embedding for security.</span>
+              </div>
+              <button
+                onClick={() => window.open(url, "_blank", "noopener")}
+                style={{ background: "rgba(255,102,68,0.2)", border: "1px solid #ff664466", color: "#ff6644", fontFamily: "monospace", fontSize: 10, padding: "6px 20px", cursor: "pointer", borderRadius: 4 }}
+              >
+                OPEN IN NEW TAB ↗
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
 //  MAIN EXPORT
 // ═══════════════════════════════════════════════
 export function OrbitalHUD() {
@@ -1081,6 +1414,8 @@ export function OrbitalHUD() {
       {page === "SKILLS" && <SkillsPage />}
       {page === "INVOC" && <InvocPage />}
       {page === "REGISTRY" && <RegistryPage />}
+      {page === "FILES" && <FilesPage />}
+      {page === "BROWSER" && <BrowserPage />}
 
       {/* ── Top Navigation ── */}
       <div style={{
@@ -1168,7 +1503,7 @@ export function OrbitalHUD() {
         display: "flex", gap: 0, height: 48,
       }}>
         <div style={{ display: "flex", gap: 4, alignItems: "center", padding: "0 10px", flexWrap: "nowrap", overflow: "hidden" }}>
-          {(["soul", "memory", "skills", "cosmic", "raccoon", "invoke", "status", "registry", "model"] as string[]).map(cmd => (
+          {(["soul", "memory", "skills", "cosmic", "raccoon", "invoke", "status", "registry", "model", "files", "browser", "drive"] as string[]).map(cmd => (
             <button key={cmd} onClick={() => { setInput(cmd); handleCommand(cmd); }} style={{
               background: "transparent", border: "1px solid #00ffff33", color: "#00ffff88",
               fontFamily: "monospace", fontSize: 9, padding: "2px 7px", cursor: "pointer",
