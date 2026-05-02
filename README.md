@@ -1,265 +1,214 @@
-# One2lvOS Phase 9 - Full Autonomous Delta Engine
+# ONE2LVOS v5 - Autonomous Gaming AI System
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Phase-9-8B5CF6?style=for-the-badge" alt="Phase 9">
-  <img src="https://img.shields.io/badge/Delta-Engine-∆⁹-EC4899?style=for-the-badge" alt="Delta Engine">
-  <img src="https://img.shields.io/badge/Vectors-3D-³-22C55E?style=for-the-badge" alt="3D Vectors">
-</p>
+A self-running, self-learning backend system with AI Coach, AI Broadcaster, AI Second Player, and mesh networking capabilities.
 
----
+## Features
 
-## Phase 9 Symbols
-
-| Symbol | Name | Description | File |
-|--------|------|-------------|------|
-| **³** | 3D Vector | Vertical dimension (z-axis) in spherical coordinates | `modules/system_dynamics.js` |
-| **++** | Amplify | Multiply value by 1.2 (capped at 1.0) | `modules/delta_engine.js` |
-| **--** | Attenuate | Multiply value by 0.8 | `modules/delta_engine.js` |
-| **∆** | Delta Gradient | 9-layer gradient propagation | `modules/delta_engine.js` |
-| **∆⁹** | Delta9 | Layer count cap at 9 layers | `modules/delta_engine.js` |
-
----
-
-## Overview
-
-**One2lvOS Phase 9** is a full autonomous multi-agent system with:
-
-- 🏛️ **Multi-Agent Council** - 3 agents negotiating consensus
-- 🔐 **Sandbox Executor** - Per-agent capability-based permissions
-- 🌐 **Secure RPC Mesh** - Token-authenticated inter-node communication
-- 🛰️ **Peer Discovery** - UDP broadcast-based node discovery
-- 📊 **Vector Database** - Embedding storage and similarity search
-- 🧠 **Autonomous Evolution** - Self-modifying memory and beliefs
-- **³ 3D Vector Engine** - Spherical coordinates with θ/φ system
-- **∆⁹ Delta Engine** - 9-layer gradient descent optimization
-
----
+- **AI Coach**: One2lv combat philosophy chatbot with real-time strategy tips
+- **AI Broadcaster**: Real-time game commentary and stream overlay data
+- **AI Second Player**: Adaptive fighting opponent with 10-level evolution system
+- **Mesh Networking**: WebSocket-based distributed node communication
+- **Memory System**: Persistent learning with Supabase integration (optional)
+- **Process Manager**: PM2 for persistent runtime (survives terminal close)
 
 ## Quick Start
 
 ```bash
-# Extract
-unzip one2lv-phase9.zip
-cd one2lv-phase9
+cd /workspace/one2lvos
 
-# Install
-sudo ./builder/quick-run.sh install-deps
-./builder/quick-run.sh install
+# Install dependencies
+npm install
 
-# Start
-./builder/quick-run.sh start
-# or
-cd ~/one2lv-os-phase9 && bash launch.sh
+# Run in development mode
+npm run dev
+
+# Or run with PM2 for persistence
+npm run pm2:start
+npm run pm2:save  # Save for auto-restart
 ```
-
----
-
-## Architecture
-
-```
-one2lv-phase9/opt/one2lv/
-├── core/
-│   ├── token.js            # Security token management
-│   └── capabilities.json    # Per-agent permissions
-├── ai/
-│   ├── council/
-│   │   ├── council.js      # Main council orchestrator
-│   │   ├── planner.js       # Plan generator
-│   │   └── engine.js        # Negotiation & scoring
-│   └── llm/
-│       └── llm.js           # LLM integration
-├── mesh/
-│   ├── rpc.js               # Secure RPC
-│   └── discovery.js         # Peer discovery
-├── sandbox/
-│   └── sandbox.js           # Capability sandbox
-├── vector/
-│   └── vector.js            # Vector database
-├── modules/
-│   ├── system_dynamics.js   # ³ 3D Vector Engine
-│   └── delta_engine.js      # ∆⁹ 9-Layer Delta Engine
-├── memory/                  # Persistent memory
-├── ui/
-│   └── server.js            # Dashboard (HTTP :8080 + WS :8081)
-├── package.json
-└── launch.sh
-```
-
----
-
-## Phase 9 Features
-
-### 3D Vector Engine (³)
-
-Create and manipulate 3D vectors using spherical coordinates:
-
-```javascript
-import { createVector3D, scaleVector, magnitude } from './modules/system_dynamics.js';
-
-// Create vector with theta, phi, magnitude
-const v = createVector3D(theta, phi, magnitude);
-// Returns: { x, y, z, magnitude, theta, phi, timestamp }
-
-// Components:
-// x = r × cos(θ) × sin(φ)  // horizontal-east
-// y = r × sin(θ) × sin(φ)  // horizontal-north
-// z = r × cos(φ)           // vertical (³ dimension)
-```
-
-### Delta Engine (∆/∆⁹)
-
-9-layer gradient descent engine:
-
-```javascript
-import { DeltaEngine, DELTA_LAYERS } from './modules/delta_engine.js';
-
-const engine = new DeltaEngine();
-
-// Add layers (max 9 due to ∆⁹ cap)
-engine.addLayer('perception', 1.0);
-engine.addLayer('reasoning', 1.0);
-// ... up to 9 layers
-
-// Propagate through all layers (∆)
-const result = engine.propagate(target, input);
-
-// Amplify (++) - multiply by 1.2, cap at 1.0
-const amplified = engine.amplify(value);
-
-// Attenuate (--) - multiply by 0.8
-const attenuated = engine.attenuate(value);
-```
-
----
 
 ## API Endpoints
 
-### Standard Endpoints
+### Health & System
+- `GET /health` - Health check
+- `GET /api/system/status` - System status
+- `GET /api/system/metrics` - CPU/Memory metrics
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/status` | GET | System status |
-| `/api/memory` | GET | Full memory |
-| `/api/inject` | POST | Inject memory node |
-| `/api/stats` | GET | Statistics |
-| `/api/reset` | POST | Clear memory |
+### AI Coach
+- `POST /api/coach/chat` - Chat with AI Coach
+- `GET /api/coach/tip` - Get coaching tip for game state
 
-### Phase 9 Vector Endpoints (³)
+### AI Broadcaster
+- `POST /api/broadcaster/commentary` - Generate game commentary
+- `POST /api/broadcaster/prematch` - Prematch intro
+- `POST /api/broadcaster/postmatch` - Postmatch analysis
+- `GET /api/broadcaster/overlay` - Stream overlay data
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/vector3d` | GET | Get current 3D vector |
-| `/api/vector3d` | POST | Create new 3D vector |
-| `/api/vector3d/scale` | POST | Scale vector |
+### AI Second Player
+- `POST /api/ai/decide` - Get AI game decision
+- `GET /api/ai/status` - Get AI evolution status
+- `POST /api/ai/reset` - Reset AI to level 1
+- `GET /api/ai/evolution-levels` - View all evolution levels
 
-### Phase 9 Delta Endpoints (∆/∆⁹)
+### Memory
+- `POST /api/memory/store` - Store memory
+- `POST /api/memory/search` - Search memories
+- `GET /api/memory/context` - Get context for AI
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/delta` | GET | Get delta engine state |
-| `/api/delta/propagate` | POST | Propagate through layers |
-| `/api/delta/amplify` | POST | Apply ++ amplify |
-| `/api/delta/attenuate` | POST | Apply -- attenuate |
-| `/api/delta/reset` | POST | Reset delta engine |
-| `/api/delta/layer` | POST | Add delta layer |
+### Leaderboard
+- `GET /api/leaderboard` - View rankings
+- `POST /api/leaderboard/update` - Update player score
 
----
+### Game
+- `POST /api/game/start` - Start a game session
+- `POST /api/game/end` - End game and record result
 
-## WebSocket Protocol
+### Mesh
+- `GET /api/mesh/status` - Mesh network status
+- `POST /api/mesh/broadcast` - Broadcast event to peers
+- `POST /api/mesh/peer` - Add mesh peer
 
-Connect to `ws://localhost:8081` for real-time Phase 9 updates.
-
-### Client → Server Messages
-```javascript
-{ "action": "vector3d_create", "theta": 0.785, "phi": 1.047, "magnitude": 1.0 }
-{ "action": "amplify", "factor": 1.2 }
-{ "action": "attenuate", "factor": 0.8 }
-{ "action": "propagate", "target": 0.8 }
-{ "action": "get_state" }
-```
-
-### Server → Client Messages
-```javascript
-{ "type": "phase9_status", "vector": {...}, "delta": {...} }
-{ "type": "vector_created", "vector": {...} }
-{ "type": "amplified", "value": 1.2, "vector": {...} }
-{ "type": "propagated", "output": 0.8, "error": 0.0, "layers": 9 }
-```
-
----
-
-## Dashboard
-
-Access at: `http://localhost:8080`
-
-Features:
-- Real-time statistics
-- Memory injection
-- Belief and goal visualization
-- 3D Vector visualization (³)
-- Delta stack visualization (∆⁹)
-- Node history
-
----
+### Unified Chat
+- `POST /api/chat` - Unified chat endpoint (routes to tools or AI Coach)
 
 ## Configuration
 
-### Environment Variables
+Edit `.env` file:
 
-```bash
-MEMORY_FILE=/opt/one2lv/memory/memory.json
-TOKEN_FILE=/opt/one2lv/core/token.key
-LLAMA_PATH=/opt/one2lv/llama.cpp/main
-MODEL_PATH=/opt/one2lv/llama.cpp/model.gguf
-UI_PORT=8080
-WS_PORT=8081
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-service-role-key
+NODE_ID=node-1
+NODE_PORT=8080
+MESH_PEERS=ws://peer1:8080,ws://peer2:8080
+ADMIN_TOKEN=your-secret-token
 ```
 
-### Capabilities
+## Supabase Setup
 
-Edit `/opt/one2lv/core/capabilities.json`:
+Run the SQL schema in your Supabase SQL Editor:
+
+```sql
+-- See supabase_schema.sql for full schema
+-- Tables: memory, sessions, leaderboard, ai_memory, chat_history, game_replays, mesh_nodes
+```
+
+## AI Evolution System
+
+The AI Second Player evolves through 10 levels:
+
+| Level | Name | Aggression | Reaction Time |
+|-------|------|------------|---------------|
+| 1 | Initiate | 30% | 800ms |
+| 2 | Apprentice | 40% | 600ms |
+| 3 | Adept | 50% | 500ms |
+| 4 | Expert | 60% | 400ms |
+| 5 | Master | 70% | 300ms |
+| 6 | Grandmaster | 80% | 250ms |
+| 7 | Champion | 85% | 200ms |
+| 8 | Legend | 90% | 150ms |
+| 9 | Mythic | 95% | 100ms |
+| 10 | One2lv | 100% | 50ms |
+
+## PM2 Commands
+
+```bash
+pm2 start index.js --name one2lvos  # Start
+pm2 stop one2lvos                    # Stop
+pm2 restart one2lvos                 # Restart
+pm2 logs one2lvos                   # View logs
+pm2 save                            # Save state
+pm2 startup                         # Auto-start on boot
+```
+
+## WebSocket Usage
+
+Connect to `ws://localhost:8080` and send:
 
 ```json
-{
-  "executor": {
-    "commands": ["ls", "pwd", "echo", "date"],
-    "max_per_minute": 60
-  }
-}
+{ "type": "chat", "input": "tip for beginners", "playerId": "player1" }
 ```
 
----
+Receive AI responses and game commentary in real-time.
 
-## System Requirements
-
-- **RAM:** 1GB minimum
-- **Disk:** 5GB minimum
-- **Node.js:** 18+
-- **Optional:** Docker, llama.cpp
-
----
-
-## ISO Build
-
-To create a bootable BackBox Gaming ISO with Phase 9:
+## Example API Calls
 
 ```bash
-cd iso-build
-sudo ./build-iso.sh
+# Health check
+curl http://localhost:8080/health
+
+# Chat with AI Coach
+curl -X POST http://localhost:8080/api/coach/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"how to improve"}'
+
+# Get AI decision for game state
+curl -X POST http://localhost:8080/api/ai/decide \
+  -H "Content-Type: application/json" \
+  -d '{"gameState":{"health":80,"opponentHealth":50}}'
+
+# Generate game commentary
+curl -X POST http://localhost:8080/api/broadcaster/commentary \
+  -H "Content-Type: application/json" \
+  -d '{"action":{"type":"attack"},"gameState":{"player1":{"stocks":3,"percent":0}}}'
 ```
 
-This will:
-1. Download BackBox 22.04.1 ISO
-2. Extract and modify it
-3. Add One2lvOS Phase 9
-4. Create boot menu entries
-5. Rebuild the ISO
+## System Architecture
 
-Output: `output/one2lv-phase9-backbox-gaming.iso`
+```
+┌─────────────────────────────────────────────────┐
+│                   ONE2LVOS v5                   │
+├─────────────────────────────────────────────────┤
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐        │
+│  │  AI     │  │  AI     │  │  AI     │        │
+│  │  Coach  │  │Broadcaster│ │Second   │        │
+│  │         │  │         │  │Player   │        │
+│  └────┬────┘  └────┬────┘  └────┬────┘        │
+│       │            │            │               │
+│       └────────────┼────────────┘               │
+│                    │                            │
+│              ┌─────▼─────┐                     │
+│              │   Tools   │                     │
+│              └─────┬─────┘                     │
+│                    │                            │
+│       ┌────────────┼────────────┐               │
+│  ┌────▼────┐  ┌────▼────┐  ┌────▼────┐        │
+│  │ Memory  │  │  Mesh   │  │ Leader- │        │
+│  │ (Store) │  │ Network │  │ board   │        │
+│  └────┬────┘  └────┬────┘  └─────────┘        │
+│       │            │                            │
+│  ┌────▼────────────▼────┐                      │
+│  │      API Server      │                      │
+│  │   Express + WS       │                      │
+│  └──────────────────────┘                      │
+└─────────────────────────────────────────────────┘
+```
+
+## Files
+
+```
+one2lvos/
+├── api/
+│   └── server.js          # Express API server
+├── ai/
+│   ├── coach.js          # AI Coach chatbot
+│   ├── broadcaster.js    # AI Broadcaster
+│   └── secondPlayer.js   # AI Second Player with evolution
+├── core/
+│   ├── supabase.js       # Supabase client
+│   └── memory.js         # Memory/learning system
+├── mesh/
+│   └── mesh.js           # WebSocket mesh networking
+├── tools/
+│   └── tools.js          # System tools
+├── games/                 # Game logic (future)
+├── index.js              # Entry point
+├── ecosystem.config.js   # PM2 configuration
+├── supabase_schema.sql   # Database schema
+├── setup.sh             # Setup script
+└── package.json
+```
 
 ---
 
-<p align="center">
-  🌌 Phase 9 - Full Autonomy with Delta Engine 🧠<br>
-  ∆⁹ 9-Layer Gradient | ³ 3D Vectors | ++ Amplify | -- Attenuate
-</p>
+**ONE2LVOS v5** - The system that runs itself.
