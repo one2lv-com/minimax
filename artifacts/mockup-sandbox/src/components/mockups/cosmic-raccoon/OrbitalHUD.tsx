@@ -1336,6 +1336,162 @@ function BrowserPage() {
 }
 
 // ═══════════════════════════════════════════════
+//  SPACE AUDIO ENGINE  (Web Audio API · no external files)
+// ═══════════════════════════════════════════════
+function createSpaceAudio() {
+  const ctx = new AudioContext();
+  const master = ctx.createGain();
+  master.gain.value = 0.45;
+  master.connect(ctx.destination);
+
+  // Ambient section
+  const ambGain = ctx.createGain();
+  ambGain.gain.value = 0;
+  ambGain.connect(master);
+  let ambRunning = false;
+  const ambOscs: OscillatorNode[] = [];
+  const ambLfos: OscillatorNode[] = [];
+
+  function _lfoMod(target: AudioParam, freq: number, depth: number) {
+    const lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = freq;
+    const lg = ctx.createGain(); lg.gain.value = depth;
+    lfo.connect(lg); lg.connect(target); lfo.start();
+    ambLfos.push(lfo);
+  }
+
+  function startAmbient() {
+    if (ambRunning) return;
+    ambRunning = true;
+    ambGain.gain.setTargetAtTime(0.13, ctx.currentTime, 2.8);
+    // 40 Hz deep space drone
+    const o1 = ctx.createOscillator(); o1.type = "sine"; o1.frequency.value = 40;
+    _lfoMod(o1.frequency, 0.12, 5);
+    o1.connect(ambGain); o1.start(); ambOscs.push(o1);
+    // 73 Hz Lumenis resonance
+    const o2 = ctx.createOscillator(); o2.type = "sine"; o2.frequency.value = 73;
+    const g2 = ctx.createGain(); g2.gain.value = 0.5;
+    _lfoMod(o2.frequency, 0.07, 2.5);
+    o2.connect(g2); g2.connect(ambGain); o2.start(); ambOscs.push(o2);
+    // 432 Hz shimmer — very quiet
+    const o3 = ctx.createOscillator(); o3.type = "sine"; o3.frequency.value = 432;
+    const g3 = ctx.createGain(); g3.gain.value = 0.045;
+    _lfoMod(o3.frequency, 0.19, 9);
+    o3.connect(g3); g3.connect(ambGain); o3.start(); ambOscs.push(o3);
+    // Subtle crackle noise
+    function crackle() {
+      if (!ambRunning) return;
+      const buf = ctx.createBuffer(1, 512, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < 512; i++) d[i] = (Math.random() * 2 - 1) * 0.012;
+      const src = ctx.createBufferSource();
+      const gn = ctx.createGain(); gn.gain.value = 0.6;
+      src.buffer = buf; src.connect(gn); gn.connect(ambGain); src.start();
+      setTimeout(crackle, 800 + Math.random() * 2400);
+    }
+    setTimeout(crackle, 2000);
+  }
+
+  function stopAmbient() {
+    ambRunning = false;
+    ambGain.gain.setTargetAtTime(0, ctx.currentTime, 0.9);
+    setTimeout(() => { ambOscs.forEach(o => { try { o.stop(); } catch {} }); ambLfos.forEach(o => { try { o.stop(); } catch {} }); ambOscs.length = 0; ambLfos.length = 0; }, 2200);
+  }
+
+  function _reverb(src: AudioNode, dur = 0.35) {
+    try {
+      const rev = ctx.createConvolver();
+      const len = Math.floor(ctx.sampleRate * dur);
+      const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = buf.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2); }
+      rev.buffer = buf;
+      const g = ctx.createGain(); g.gain.value = 0.17;
+      src.connect(rev); rev.connect(g); g.connect(master);
+    } catch {}
+  }
+
+  function playClick() {
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(1000 + Math.random() * 600, t);
+    o.frequency.exponentialRampToValueAtTime(280, t + 0.28);
+    g.gain.setValueAtTime(0.26, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+    o.connect(g); g.connect(master); _reverb(g, 0.3);
+    o.start(t); o.stop(t + 0.3);
+  }
+
+  function playPanelHit(freq = 200) {
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = "triangle"; o.frequency.value = freq;
+    const o2 = ctx.createOscillator(); const g2 = ctx.createGain();
+    o2.type = "sine"; o2.frequency.value = freq * 2.5; g2.gain.value = 0.4;
+    g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(master); _reverb(g, 0.5);
+    o.start(t); o2.start(t); o.stop(t + 0.58); o2.stop(t + 0.58);
+  }
+
+  function playTabSwitch() {
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(740, t + 0.1);
+    g.gain.setValueAtTime(0.16, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t + 0.17);
+  }
+
+  function playCommand() {
+    [0, 0.1, 0.2].forEach((delay, i) => {
+      const t = ctx.currentTime + delay;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = "square"; o.frequency.value = [480, 680, 920][i];
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.11, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.08);
+    });
+  }
+
+  function playAgentFire() {
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = "sine"; o.frequency.value = 73;
+    o.frequency.exponentialRampToValueAtTime(146, t + 0.06);
+    g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    o.connect(g); g.connect(master); _reverb(g, 0.4);
+    o.start(t); o.stop(t + 0.22);
+  }
+
+  function playAutoOn() {
+    [73, 109.5, 146, 219, 292].forEach((freq, i) => {
+      const t = ctx.currentTime + i * 0.09;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.22, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+      o.connect(g); g.connect(master);
+      if (i === 4) _reverb(g, 0.6);
+      o.start(t); o.stop(t + 0.35);
+    });
+  }
+
+  function playAutoOff() {
+    [292, 219, 146, 73].forEach((freq, i) => {
+      const t = ctx.currentTime + i * 0.07;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.24);
+    });
+  }
+
+  function setVolume(v: number) { master.gain.setTargetAtTime(Math.max(0, Math.min(1, v)), ctx.currentTime, 0.04); }
+  function getVolume() { return master.gain.value; }
+  function destroy() { try { stopAmbient(); ctx.close(); } catch {} }
+
+  return { startAmbient, stopAmbient, playClick, playPanelHit, playTabSwitch, playCommand, playAgentFire, playAutoOn, playAutoOff, setVolume, getVolume, destroy };
+}
+
+// ═══════════════════════════════════════════════
 //  AGENTS PAGE
 // ═══════════════════════════════════════════════
 type AgentsPageProps = {
@@ -1369,12 +1525,7 @@ function AgentsPage({ autoMode, setAutoMode, agentEnabled, setAgentEnabled, agen
               ◈ AUTONOMOUS AGENT CORE
             </div>
             <button
-              onClick={() => {
-                const next = !autoMode;
-                setAutoMode(next);
-                if (next) onSpeak("Autonomous mode engaged. All agents online. Jak!");
-                else onSpeak("Autonomous mode paused. Agents standing by.");
-              }}
+              onClick={() => setAutoMode(!autoMode)}
               style={{
                 background: autoMode ? "rgba(255,68,170,0.22)" : "rgba(60,60,60,0.3)",
                 border: `1px solid ${autoMode ? "#ff44aa" : "#444"}`,
@@ -1522,6 +1673,13 @@ export function OrbitalHUD() {
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const recognizerRef = useRef<any>(null);
   const frameRef = useRef(0);
+  // ── Sound / ripple state ──
+  const audioRef = useRef<ReturnType<typeof createSpaceAudio> | null>(null);
+  const [volume, setVolume] = useState(0.45);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [ambientOn, setAmbientOn] = useState(false);
+  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number; color: string }>>([]);
+  const rippleIdRef = useRef(0);
 
   // ── Autonomous agent state ──
   const [autoMode, setAutoMode] = useState(false);
@@ -1540,10 +1698,12 @@ export function OrbitalHUD() {
     counts: Object.fromEntries(AGENT_DEFS.map(a => [a.id, 0])) as Record<string, number>,
     speak: (_: string) => {},
     setMsg: (_: string) => {},
+    playAgentFire: () => {},
   });
   // Keep refs in sync with render state (no extra effect)
   agentRefs.current.auto = autoMode;
   Object.entries(agentEnabled).forEach(([id, v]) => { agentRefs.current.enabled[id] = v; });
+  agentRefs.current.playAgentFire = () => { if (soundEnabled) audioRef.current?.playAgentFire(); };
   agentRefs.current.speak = (t: string) => {
     if (!("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
@@ -1614,7 +1774,21 @@ export function OrbitalHUD() {
     return () => { try { r.stop(); } catch {} };
   }, []);
 
+  const initAudio = useCallback(() => {
+    if (audioRef.current) return;
+    try { audioRef.current = createSpaceAudio(); audioRef.current.setVolume(volume); } catch {}
+  }, [volume]);
+
+  const handleAutoToggle = useCallback((next: boolean) => {
+    initAudio();
+    setAutoMode(next);
+    if (next) { audioRef.current?.playAutoOn(); speak("Autonomous mode engaged. All agents online. Jak!"); }
+    else       { audioRef.current?.playAutoOff(); speak("Autonomous mode paused. Agents standing by."); }
+  }, [initAudio, speak]);
+
   const handleCommand = useCallback((text: string) => {
+    initAudio();
+    if (soundEnabled) audioRef.current?.playCommand();
     const t = text.toLowerCase().trim();
     // Check voice command table
     for (const [key, val] of Object.entries(VOICE_CMDS)) {
@@ -1629,7 +1803,7 @@ export function OrbitalHUD() {
     const reply = `I heard: "${text}". All systems nominal. Frequency 73 hertz. Raccoon orbital locked. Jak!`;
     setAgentMsg(reply);
     speak(reply);
-  }, [speak]);
+  }, [speak, initAudio, soundEnabled]);
 
   // Orbital callback (memoized)
   const handleOrbit = useCallback((rx: number, ry: number, pp: { x: number; y: number; sin: number }[], sin: number) => {
@@ -1662,6 +1836,7 @@ export function OrbitalHUD() {
         const cnt = agentRefs.current.counts[agent.id];
         agentRefs.current.setMsg(`[${agent.name}] ${msg}`);
         agentRefs.current.speak(msg);
+        agentRefs.current.playAgentFire();
         setAgentDisplay(d => ({
           ...d,
           [agent.id]: { count: cnt, lastMsg: msg, lastTime: now },
@@ -1679,6 +1854,19 @@ export function OrbitalHUD() {
     <div
       ref={containerRef}
       style={{ width: "100vw", height: "100vh", background: "#000", overflow: "hidden", fontFamily: "monospace", position: "relative", userSelect: "none" }}
+      onClick={(e) => {
+        initAudio();
+        if (!soundEnabled) return;
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        audioRef.current?.playClick();
+        const id = ++rippleIdRef.current;
+        const color = PAGE_COLOR[page];
+        setRipples(r => [...r, { id, x, y, color }]);
+        setTimeout(() => setRipples(r => r.filter(rr => rr.id !== id)), 750);
+      }}
     >
       {/* ── Canvas (always behind) ── */}
       <CosmicCanvas width={dims.w} height={dims.h} dimmed={page !== "COSMIC"} onOrbit={handleOrbit} />
@@ -1689,6 +1877,15 @@ export function OrbitalHUD() {
         if (!pos || pos.x === 0) return null;
         return <OrbitalPanel key={panel.id} panel={panel} x={pos.x} y={pos.y} t={frameT} />;
       })}
+
+      {/* ── Click Ripples ── */}
+      {ripples.map(r => (
+        <div key={r.id} style={{ position: "absolute", left: r.x, top: r.y, pointerEvents: "none", zIndex: 200 }}>
+          <div className="click-ripple"     style={{ "--rc": r.color } as React.CSSProperties} />
+          <div className="click-ripple-b"   style={{ "--rc": r.color } as React.CSSProperties} />
+          <div className="click-ripple-dot" style={{ "--rc": r.color } as React.CSSProperties} />
+        </div>
+      ))}
 
       {/* ── Raccoon SVG Overlay ── */}
       {raccoonVisible && (
@@ -1722,7 +1919,7 @@ export function OrbitalHUD() {
       {page === "AGENTS" && (
         <AgentsPage
           autoMode={autoMode}
-          setAutoMode={setAutoMode}
+          setAutoMode={handleAutoToggle}
           agentEnabled={agentEnabled}
           setAgentEnabled={setAgentEnabled}
           agentDisplay={agentDisplay}
@@ -1748,6 +1945,8 @@ export function OrbitalHUD() {
               <button
                 key={p}
                 onClick={() => {
+                  initAudio();
+                  if (soundEnabled) audioRef.current?.playTabSwitch();
                   setPage(p);
                   const msg = p === "COSMIC" ? "Cosmic canvas. Raccoon orbital." : `Opening ${p.toLowerCase()} layer.`;
                   setAgentMsg(msg); speak(msg);
@@ -1783,6 +1982,33 @@ export function OrbitalHUD() {
           >
             {ttsActive ? "◉ SPEAK" : ttsEnabled ? "◎ TTS" : "○ MUTE"}
           </button>
+          {/* ── Sound controls ── */}
+          <div style={{ width: 1, height: 18, background: "#ffffff11", margin: "0 2px" }} />
+          <button
+            onClick={() => { initAudio(); const next = !soundEnabled; setSoundEnabled(next); audioRef.current?.setVolume(next ? volume : 0); }}
+            style={{ background: "transparent", border: `1px solid ${soundEnabled ? "#ff884455" : "#33333388"}`, color: soundEnabled ? "#ff8844" : "#444", fontFamily: "monospace", fontSize: 9, padding: "2px 7px", cursor: "pointer", borderRadius: 3, flexShrink: 0 }}
+          >
+            {soundEnabled ? "◉ SFX" : "○ SFX"}
+          </button>
+          <button
+            onClick={() => {
+              initAudio();
+              const next = !ambientOn;
+              setAmbientOn(next);
+              if (next) audioRef.current?.startAmbient();
+              else audioRef.current?.stopAmbient();
+            }}
+            style={{ background: "transparent", border: `1px solid ${ambientOn ? "#44ff8855" : "#33333388"}`, color: ambientOn ? "#44ff88" : "#444", fontFamily: "monospace", fontSize: 9, padding: "2px 7px", cursor: "pointer", borderRadius: 3, flexShrink: 0 }}
+          >
+            {ambientOn ? "~ AMB" : "○ AMB"}
+          </button>
+          <input
+            type="range" min={0} max={1} step={0.02} value={volume}
+            className="vol-slider"
+            onChange={e => { initAudio(); const v = Number(e.target.value); setVolume(v); if (soundEnabled) audioRef.current?.setVolume(v); }}
+            style={{ width: 56, cursor: "pointer", flexShrink: 0 }}
+          />
+          <span style={{ color: "#444", fontSize: 8, minWidth: 22, textAlign: "right" }}>{Math.round(volume * 100)}%</span>
         </div>
       </div>
 
