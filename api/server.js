@@ -22,6 +22,17 @@ const PORT = process.env.NODE_PORT || 8080;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'one2lv-secret-2024';
 
 const app = express();
+
+// Security headers
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  next();
+});
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
